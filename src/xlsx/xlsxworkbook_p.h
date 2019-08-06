@@ -42,12 +42,18 @@
 #include "xlsxsimpleooxmlfile_p.h"
 #include "xlsxrelationships_p.h"
 
+//	Dave added
+#include "xlsxdefinednames.h"
+#include "XlsxAttributes_p.h"
+//	Dave end
+
 #include <QSharedPointer>
 #include <QPair>
 #include <QStringList>
 
 namespace QXlsx {
 
+/*
 struct XlsxDefineNameData
 {
     XlsxDefineNameData()
@@ -56,7 +62,7 @@ struct XlsxDefineNameData
     XlsxDefineNameData(const QString &name, const QString &formula, const QString &comment, int sheetId=-1)
         :name(name), formula(formula), comment(comment), sheetId(sheetId)
     {
-
+	
     }
     QString name;
     QString formula;
@@ -64,7 +70,7 @@ struct XlsxDefineNameData
     //using internal sheetId, instead of the localSheetId(order in the workbook)
     int sheetId;
 };
-
+*/
 class WorkbookPrivate : public AbstractOOXmlFilePrivate
 {
     Q_DECLARE_PUBLIC(Workbook)
@@ -79,27 +85,70 @@ public:
     QSharedPointer<Theme> theme;
     QList<QSharedPointer<MediaFile> > mediaFiles;
     QList<QSharedPointer<Chart> > chartFiles;
-    QList<XlsxDefineNameData> definedNamesList;
+    //QList<XlsxDefineNameData> definedNamesList;
+		
+	//	Lookup up sheets based on index
+	//QVector<QSharedPointer<AbstractSheet> > sheetsIndex;
+	//	Lookup based on sheet name
+	//QMap<QString,QSharedPointer<AbstractSheet> > sheetsMap;
 
-    bool strings_to_numbers_enabled;
+	//	Dave added
+	void saveXmlHeader(QXmlStreamWriter &writer) const;	
+	void loadXmlHeader(QXmlStreamReader &reader);	
+
+	//	Initialize values for new spreadsheet
+	void initalizeBlank();
+	//	Dave end
+
+    bool strings_to_numbers_enabled;	//					
     bool strings_to_hyperlinks_enabled;
     bool html_to_richstring_enabled;
-    bool date1904;
     QString defaultDateFormat;
 
-    int x_window;
-    int y_window;
-    int window_width;
-    int window_height;
-
-    int activesheetIndex;
-    int firstsheet;
+//	Replaced with workbookView below
+    //int x_window;
+    //int y_window;
+    //int window_width;
+    //int window_height;
+	//int firstsheet;
+	//int activesheetIndex;
+	
     int table_count;
 
     //Used to generate new sheet name and id
     int last_worksheet_index;
     int last_chartsheet_index;
     int last_sheet_id;
+
+	//	Dave-Significantly expand range logic
+	QScopedPointer<DefinedNames>	definedNames;
+
+	//	Dave-Replace hard coded values with variables
+	QXmlStreamNamespaceDeclarations namespaceDeclarations;
+	QXmlStreamAttributes			headerAttributes;
+	QString							headerMamespace;
+
+	//	Dave - File data
+	//	Ecma Office Open XML Part 1 - Fundamentals And Markup Language Reference1
+	//	Page 1565-1566
+	//QXmlStreamAttributes			fileVersion;
+	XlsxAttributes					fileVersion;
+
+	//	Dave - workbookPr data
+	//	Ecma Office Open XML Part 1 - Fundamentals And Markup Language Reference1
+	//	Page 1576-1580 - Note, only one field picked up.  Many left to migrate
+	XlsxAttributes					workbookPr;
+
+	//	Dave - calcPr data
+	//	Ecma Office Open XML Part 1 - Fundamentals And Markup Language Reference1
+	//	Page 1543-1547 - Note, only one field picked up.  Many left to migrate
+	XlsxAttributes					calcPr;
+
+	//	Dave - bookviews data
+	//	Ecma Office Open XML Part 1 - Fundamentals And Markup Language Reference1
+	//	Page 1587-1589 - Note, only one field picked up.  Many left to migrate
+	//QList<XlsxAttributes>			workbookView;
+	XlsxAttributes					workbookView;
 };
 
 }

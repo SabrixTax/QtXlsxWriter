@@ -62,10 +62,35 @@ public:
     void saveToXmlFile(QIODevice *device) const;
     bool loadFromXmlFile(QIODevice *device);
 
+	//	Dave-Add accessors to new fields
+	QString application() const;
+	void setApplication(const QString& value);
+	QString docSecurity() const;
+	void setDocSecurity(const QString& value);
+	QString scaleCrop() const;
+	void setScaleCrop(const QString& value);
+	QString linksUpToDate() const;
+	void setLinksUpToDate(const QString& value);
+	QString sharedDoc() const;
+	void setSharedDoc(const QString& value);
+	QString hyperlinksChanged() const;
+	void setHyperlinksChanged(const QString& value);
+	QString appVersion() const;
+	void setAppVersion(const QString& value);
+
 private:
     QStringList m_titlesOfPartsList;
     QList<QPair<QString, int> > m_headingPairsList;
     QMap<QString, QString> m_properties;
+
+	//	Dave-Replace hard coded values with cached values from open file
+	QString		m_application;
+	QString		m_docSecurity;
+	QString		m_scaleCrop;
+	QString		m_linksUpToDate;
+	QString		m_sharedDoc;
+	QString		m_hyperlinksChanged;
+	QString		m_appVersion;
 };
 
 }

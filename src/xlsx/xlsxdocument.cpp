@@ -96,6 +96,11 @@ void DocumentPrivate::init()
 
     if (workbook.isNull())
         workbook = QSharedPointer<Workbook>(new Workbook(Workbook::F_NewFromScratch));
+
+	//	New properties
+	if (docPropsApp.isNull()) 
+		docPropsApp.reset(new DocPropsApp(DocPropsApp::F_LoadFromExists));
+
 }
 
 bool DocumentPrivate::loadPackage(QIODevice *device)
@@ -136,10 +141,15 @@ bool DocumentPrivate::loadPackage(QIODevice *device)
         //In normal case, this should be "docProps/app.xml"
         QString docPropsApp_Name = rels_app[0].target;
 
-        DocPropsApp props(DocPropsApp::F_LoadFromExists);
-        props.loadFromXmlData(zipReader.fileData(docPropsApp_Name));
-        foreach (QString name, props.propertyNames())
-            q->setDocumentProperty(name, props.property(name));
+		//	Dave-We want to save this state.  If document variable is not allocated, do it now.
+		if (docPropsApp.isNull()) {
+			docPropsApp.reset(new DocPropsApp(DocPropsApp::F_LoadFromExists));
+		}
+
+        //DocPropsApp props(DocPropsApp::F_LoadFromExists);
+		docPropsApp->loadFromXmlData(zipReader.fileData(docPropsApp_Name));
+        foreach (QString name, docPropsApp->propertyNames())
+            q->setDocumentProperty(name, docPropsApp->property(name));
     }
 
     //load workbook now, Get the workbook file path from the root rels file
@@ -239,18 +249,24 @@ bool DocumentPrivate::savePackage(QIODevice *device) const
         return false;
 
     contentTypes->clearOverrides();
-
-    DocPropsApp docPropsApp(DocPropsApp::F_NewFromScratch);
+    //DocPropsApp docPropsApp(DocPropsApp::F_NewFromScratch); // Dave-used values from load
     DocPropsCore docPropsCore(DocPropsCore::F_NewFromScratch);
 
     // save worksheet xml files
     QList<QSharedPointer<AbstractSheet> > worksheets = workbook->getSheetsByTypes(AbstractSheet::ST_WorkSheet);
     if (!worksheets.isEmpty())
-        docPropsApp.addHeadingPair(QStringLiteral("Worksheets"), worksheets.size());
+        docPropsApp->addHeadingPair(QStringLiteral("Worksheets"), worksheets.size());
     for (int i=0; i<worksheets.size(); ++i) {
         QSharedPointer<AbstractSheet> sheet = worksheets[i];
         contentTypes->addWorksheetName(QStringLiteral("sheet%1").arg(i+1));
-        docPropsApp.addPartTitle(sheet->sheetName());
+        docPropsApp->addPartTitle(sheet->sheetName());
+		
+		//	Dave-Save range names to titles
+		/*const QStringList& rangeNameList = workbook->names()->getDefinedNameList();
+		foreach(QString name, rangeNameList)
+		{
+			docPropsApp->addPartTitle(name);
+		}*/
 
         zipWriter.addFile(QStringLiteral("xl/worksheets/sheet%1.xml").arg(i+1), sheet->saveToXmlData());
         Relationships *rel = sheet->relationships();
@@ -261,11 +277,11 @@ bool DocumentPrivate::savePackage(QIODevice *device) const
     //save chartsheet xml files
     QList<QSharedPointer<AbstractSheet> > chartsheets = workbook->getSheetsByTypes(AbstractSheet::ST_ChartSheet);
     if (!chartsheets.isEmpty())
-        docPropsApp.addHeadingPair(QStringLiteral("Chartsheets"), chartsheets.size());
+        docPropsApp->addHeadingPair(QStringLiteral("Chartsheets"), chartsheets.size());
     for (int i=0; i<chartsheets.size(); ++i) {
         QSharedPointer<AbstractSheet> sheet = chartsheets[i];
         contentTypes->addWorksheetName(QStringLiteral("sheet%1").arg(i+1));
-        docPropsApp.addPartTitle(sheet->sheetName());
+        docPropsApp->addPartTitle(sheet->sheetName());
 
         zipWriter.addFile(QStringLiteral("xl/chartsheets/sheet%1.xml").arg(i+1), sheet->saveToXmlData());
         Relationships *rel = sheet->relationships();
@@ -273,6 +289,20 @@ bool DocumentPrivate::savePackage(QIODevice *device) const
             zipWriter.addFile(QStringLiteral("xl/chartsheets/_rels/sheet%1.xml.rels").arg(i+1), rel->saveToXmlData());
     }
 
+	//	Save range name data for apps.xml
+	if (!workbook->names()->empty())
+	{
+		//	Dave-Save range names to titles
+		const QStringList& rangeNameList = workbook->names()->getDefinedNameList();
+
+		//	Save range count
+		docPropsApp->addHeadingPair(QStringLiteral("Named Ranges"), rangeNameList.count());
+
+		foreach(QString name, rangeNameList)
+		{
+			docPropsApp->addPartTitle(name);
+		}
+	}
     // save external links xml files
     for (int i=0; i<workbook->d_func()->externalLinks.count(); ++i) {
         SimpleOOXmlFile *link = workbook->d_func()->externalLinks[i].data();
@@ -301,12 +331,12 @@ bool DocumentPrivate::savePackage(QIODevice *device) const
 
     // save docProps app/core xml file
     foreach (QString name, q->documentPropertyNames()) {
-        docPropsApp.setProperty(name, q->documentProperty(name));
+        docPropsApp->setProperty(name, q->documentProperty(name));
         docPropsCore.setProperty(name, q->documentProperty(name));
     }
-    contentTypes->addDocPropApp();
+    contentTypes->addDocPropApp();	
     contentTypes->addDocPropCore();
-    zipWriter.addFile(QStringLiteral("docProps/app.xml"), docPropsApp.saveToXmlData());
+    zipWriter.addFile(QStringLiteral("docProps/app.xml"), docPropsApp->saveToXmlData());
     zipWriter.addFile(QStringLiteral("docProps/core.xml"), docPropsCore.saveToXmlData());
 
     // save sharedStrings xml file
@@ -808,13 +838,14 @@ Cell *Document::cellAt(int row, int col) const
  * \param scope The name of one worksheet, or empty which means golbal scope.
  * \return Return false if the name invalid.
  */
+/*	Depreciated.  
 bool Document::defineName(const QString &name, const QString &formula, const QString &comment, const QString &scope)
 {
     Q_D(Document);
 
-    return d->workbook->defineName(name, formula, comment, scope);
+    return d->workbook->names()->append(name, formula, comment, scope);
 }
-
+*/
 /*!
     Return the range that contains cell data.
  */

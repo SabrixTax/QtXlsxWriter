@@ -97,7 +97,7 @@ public:
     Cell *cellAt(const CellReference &cell) const;
     Cell *cellAt(int row, int col) const;
 
-    bool defineName(const QString &name, const QString &formula, const QString &comment=QString(), const QString &scope=QString());
+    //bool defineName(const QString &name, const QString &formula, const QString &comment=QString(), const QString &scope=QString());
 
     CellRange dimension() const;
 
@@ -114,7 +114,10 @@ public:
     bool moveSheet(const QString &srcName, int distIndex);
     bool deleteSheet(const QString &name);
 
-    Workbook *workbook() const;
+	//	Dave added - Document and workbook have a lot of duplicate code  Should a 
+	//	document manage a document manage a workbook?  May need to move things around 
+	//	for better model.  Just forward to Workbook until model is changed.
+	Workbook *workbook() const;
     AbstractSheet *sheet(const QString &sheetName) const;
     AbstractSheet *currentSheet() const;
     Worksheet *currentWorksheet() const;

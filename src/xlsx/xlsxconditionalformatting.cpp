@@ -27,6 +27,7 @@
 #include "xlsxconditionalformatting_p.h"
 #include "xlsxworksheet.h"
 #include "xlsxcellrange.h"
+#include "xlsxcellrange_p.h"
 #include "xlsxstyles_p.h"
 
 #include <QXmlStreamReader>

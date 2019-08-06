@@ -33,6 +33,8 @@ QT_BEGIN_NAMESPACE_XLSX
 class Workbook;
 class Drawing;
 class AbstractSheetPrivate;
+class DefinedNames; 
+
 class Q_XLSX_EXPORT AbstractSheet : public AbstractOOXmlFile
 {
     Q_DECLARE_PRIVATE(AbstractSheet)
@@ -63,6 +65,9 @@ public:
 
 protected:
     friend class Workbook;
+	friend class DefinedNames;	//	Dave-To get to sheetID
+	friend class DefinedName;	//	Dave-To get to sheetID
+
     AbstractSheet(const QString &sheetName, int sheetId, Workbook *book, AbstractSheetPrivate *d);
     virtual AbstractSheet *copy(const QString &distName, int distId) const = 0;
     void setSheetName(const QString &sheetName);

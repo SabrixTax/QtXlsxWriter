@@ -27,6 +27,7 @@
 
 #include "xlsxglobal.h"
 #include "xlsxcellrange.h"
+#include "xlsxcellrange_p.h"
 #include "xlsxcellreference.h"
 #include <QSharedDataPointer>
 #include <QString>

@@ -39,6 +39,7 @@
 #include "xlsxglobal.h"
 #include "xlsxcell.h"
 #include "xlsxcellrange.h"
+#include "xlsxcellrange_p.h"
 #include "xlsxrichstring.h"
 #include "xlsxcellformula.h"
 #include <QList>

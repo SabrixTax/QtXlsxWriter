@@ -36,6 +36,7 @@
 #include "xlsxcell.h"
 #include "xlsxcell_p.h"
 #include "xlsxcellrange.h"
+#include "xlsxcellrange_p.h"
 #include "xlsxconditionalformatting_p.h"
 #include "xlsxdrawinganchor_p.h"
 #include "xlsxchart.h"
@@ -54,24 +55,37 @@
 #include <QXmlStreamReader>
 #include <QTextDocument>
 #include <QDir>
+#include <QPair>
 
 #include <math.h>
 
 QT_BEGIN_NAMESPACE_XLSX
 
-WorksheetPrivate::WorksheetPrivate(Worksheet *p, Worksheet::CreateFlag flag)
-    : AbstractSheetPrivate(p, flag)
-  , windowProtection(false), showFormulas(false), showGridLines(true), showRowColHeaders(true)
-  , showZeros(true), rightToLeft(false), tabSelected(false), showRuler(false)
-  , showOutlineSymbols(true), showWhiteSpace(true), urlPattern(QStringLiteral("^([fh]tt?ps?://)|(mailto:)|(file://)"))
+WorksheetPrivate::WorksheetPrivate(Worksheet *p, Worksheet::CreateFlag flag) :
+    AbstractSheetPrivate(p, flag), 
+  	urlPattern(QStringLiteral("^([fh]tt?ps?://)|(mailto:)|(file://)"))
 {
     previous_row = 0;
 
     outline_row_level = 0;
     outline_col_level = 0;
 
-    default_row_height = 15;
     default_row_zeroed = false;
+
+	//	If loading new file, initialize variables
+	if( flag == Workbook::CreateFlag::F_NewFromScratch )
+	{
+		initalizeBlank();
+	}
+}
+
+void WorksheetPrivate::initalizeBlank()
+{
+	//	Initialize for blank sheet
+	//	Initialize bare minumum for sheetView
+	sheetView.insert( QStringLiteral( "workbookViewId" ), QStringLiteral( "0" ) );
+
+	sheetFormatPr.insert( QStringLiteral( "defaultRowHeight" ), QStringLiteral( "15" ) );
 }
 
 WorksheetPrivate::~WorksheetPrivate()
@@ -240,7 +254,8 @@ Worksheet::~Worksheet()
 bool Worksheet::isWindowProtected() const
 {
     Q_D(const Worksheet);
-    return d->windowProtection;
+	return d->sheetView.toBool( QStringLiteral( "windowProtection" ) );
+    //return d->windowProtection;
 }
 
 /*!
@@ -249,7 +264,13 @@ bool Worksheet::isWindowProtected() const
 void Worksheet::setWindowProtected(bool protect)
 {
     Q_D(Worksheet);
-    d->windowProtection = protect;
+
+	//	Default is false, only save True
+	if( protect )
+		d->sheetView.setBool( QStringLiteral( "windowProtection" ), protect );
+	else
+		d->sheetView.remove( QStringLiteral( "windowProtection" ) );
+    //d->windowProtection = protect;
 }
 
 /*!
@@ -258,7 +279,8 @@ void Worksheet::setWindowProtected(bool protect)
 bool Worksheet::isFormulasVisible() const
 {
     Q_D(const Worksheet);
-    return d->showFormulas;
+	return d->sheetView.toBool( QStringLiteral( "showFormulas" ) );
+	//return d->showFormulas;
 }
 
 /*!
@@ -267,7 +289,12 @@ bool Worksheet::isFormulasVisible() const
 void Worksheet::setFormulasVisible(bool visible)
 {
     Q_D(Worksheet);
-    d->showFormulas = visible;
+	//	Default is false, only save True
+	if( visible )
+		d->sheetView.setBool( QStringLiteral( "showFormulas" ), visible );
+	else
+		d->sheetView.remove( QStringLiteral( "showFormula" ) );
+	//d->showFormulas = visible;
 }
 
 /*!
@@ -276,7 +303,8 @@ void Worksheet::setFormulasVisible(bool visible)
 bool Worksheet::isGridLinesVisible() const
 {
     Q_D(const Worksheet);
-    return d->showGridLines;
+	return d->sheetView.toBool( QStringLiteral( "showGridLines" ) );
+	//return d->showGridLines;
 }
 
 /*!
@@ -285,7 +313,12 @@ bool Worksheet::isGridLinesVisible() const
 void Worksheet::setGridLinesVisible(bool visible)
 {
     Q_D(Worksheet);
-    d->showGridLines = visible;
+	//	Default is True, only save False
+	if( !visible )
+		d->sheetView.setBool( QStringLiteral( "showGridLines" ), visible );
+	else
+		d->sheetView.remove( QStringLiteral( "showGridLines" ) );
+	//d->showGridLines = visible;
 }
 
 /*!
@@ -294,7 +327,8 @@ void Worksheet::setGridLinesVisible(bool visible)
 bool Worksheet::isRowColumnHeadersVisible() const
 {
     Q_D(const Worksheet);
-    return d->showRowColHeaders;
+	return d->sheetView.toBool( QStringLiteral( "showRowColHeaders" ) );
+	//return d->showRowColHeaders;
 }
 
 /*!
@@ -303,9 +337,38 @@ bool Worksheet::isRowColumnHeadersVisible() const
 void Worksheet::setRowColumnHeadersVisible(bool visible)
 {
     Q_D(Worksheet);
-    d->showRowColHeaders = visible;
+	//	Default is True, only save False
+	if( !visible )
+		d->sheetView.setBool( QStringLiteral( "showRowColHeaders" ), visible );
+	else
+		d->sheetView.remove( QStringLiteral( "showRowColHeaders" ) );
+	//d->showRowColHeaders = visible;
 }
 
+/*!
+* Return whether is cells that have zero value show a zero.
+*/
+bool Worksheet::isZerosVisible() const
+{
+	Q_D(const Worksheet);
+	return d->sheetView.toBool( QStringLiteral( "showZeros" ) );
+	//return d->showZeros;
+}
+
+/*!
+* Show a zero in cells that have zero value if \a visible is true.
+*/
+void Worksheet::setZerosVisible(bool visible)
+{
+	Q_D(Worksheet);
+	//	Default is True, only save False
+	if( !visible )
+		d->sheetView.setBool( QStringLiteral( "showZeros" ), visible );
+	else
+		d->sheetView.remove( QStringLiteral( "showZeros" ) );
+
+	//d->showZeros = visible;
+}
 
 /*!
  * Return whether the sheet is shown right-to-left or not.
@@ -313,7 +376,8 @@ void Worksheet::setRowColumnHeadersVisible(bool visible)
 bool Worksheet::isRightToLeft() const
 {
     Q_D(const Worksheet);
-    return d->rightToLeft;
+	return d->sheetView.toBool( QStringLiteral( "rightToLeft" ) );
+	//return d->rightToLeft;
 }
 
 /*!
@@ -322,25 +386,12 @@ bool Worksheet::isRightToLeft() const
 void Worksheet::setRightToLeft(bool enable)
 {
     Q_D(Worksheet);
-    d->rightToLeft = enable;
-}
-
-/*!
- * Return whether is cells that have zero value show a zero.
- */
-bool Worksheet::isZerosVisible() const
-{
-    Q_D(const Worksheet);
-    return d->showZeros;
-}
-
-/*!
- * Show a zero in cells that have zero value if \a visible is true.
- */
-void Worksheet::setZerosVisible(bool visible)
-{
-    Q_D(Worksheet);
-    d->showZeros = visible;
+	//	Default is false, only save True
+	if( enable )
+		d->sheetView.setBool( QStringLiteral( "rightToLeft" ), enable );
+	else
+		d->sheetView.remove( QStringLiteral( "rightToLeft" ) );
+	//d->rightToLeft = enable;
 }
 
 /*!
@@ -349,7 +400,8 @@ void Worksheet::setZerosVisible(bool visible)
 bool Worksheet::isSelected() const
 {
     Q_D(const Worksheet);
-    return d->tabSelected;
+	return d->sheetView.toBool( QStringLiteral( "tabSelected" ) );
+	//return d->tabSelected;
 }
 
 /*!
@@ -358,7 +410,12 @@ bool Worksheet::isSelected() const
 void Worksheet::setSelected(bool select)
 {
     Q_D(Worksheet);
-    d->tabSelected = select;
+	//	Default is false, only save True
+	if( select )
+		d->sheetView.setBool( QStringLiteral( "tabSelected" ), select );
+	else
+		d->sheetView.remove( QStringLiteral( "tabSelected" ) );
+	//d->tabSelected = select;
 }
 
 /*!
@@ -367,7 +424,8 @@ void Worksheet::setSelected(bool select)
 bool Worksheet::isRulerVisible() const
 {
     Q_D(const Worksheet);
-    return d->showRuler;
+	return d->sheetView.toBool( QStringLiteral( "showRuler" ) );
+	//return d->showRuler;
 
 }
 
@@ -377,8 +435,12 @@ bool Worksheet::isRulerVisible() const
 void Worksheet::setRulerVisible(bool visible)
 {
     Q_D(Worksheet);
-    d->showRuler = visible;
-
+	//	Default is True, only save False
+	if( !visible )
+		d->sheetView.setBool( QStringLiteral( "showRuler" ), visible );
+	else
+		d->sheetView.remove( QStringLiteral( "showRuler" ) );
+	//d->showRuler = visible;
 }
 
 /*!
@@ -387,7 +449,8 @@ void Worksheet::setRulerVisible(bool visible)
 bool Worksheet::isOutlineSymbolsVisible() const
 {
     Q_D(const Worksheet);
-    return d->showOutlineSymbols;
+	return d->sheetView.toBool( QStringLiteral( "showOutlineSymbols" ) );
+//	return d->showOutlineSymbols;
 }
 
 /*!
@@ -396,7 +459,12 @@ bool Worksheet::isOutlineSymbolsVisible() const
 void Worksheet::setOutlineSymbolsVisible(bool visible)
 {
     Q_D(Worksheet);
-    d->showOutlineSymbols = visible;
+	//	Default is True, only save False
+	if( !visible )
+		d->sheetView.setBool( QStringLiteral( "showOutlineSymbols" ), visible );
+	else
+		d->sheetView.remove( QStringLiteral( "showOutlineSymbols" ) );
+	//d->showOutlineSymbols = visible;
 }
 
 /*!
@@ -405,7 +473,8 @@ void Worksheet::setOutlineSymbolsVisible(bool visible)
 bool Worksheet::isWhiteSpaceVisible() const
 {
     Q_D(const Worksheet);
-    return d->showWhiteSpace;
+	return d->sheetView.toBool( QStringLiteral( "showWhiteSpace" ) );
+	//return d->showWhiteSpace;
 }
 
 /*!
@@ -414,7 +483,33 @@ bool Worksheet::isWhiteSpaceVisible() const
 void Worksheet::setWhiteSpaceVisible(bool visible)
 {
     Q_D(Worksheet);
-    d->showWhiteSpace = visible;
+	//	Default is True, only save False
+	if( !visible )
+		d->sheetView.setBool( QStringLiteral( "showWhiteSpace" ), visible );
+	else
+		d->sheetView.remove( QStringLiteral( "showWhiteSpace" ) );
+	//d->showWhiteSpace = visible;
+}
+
+const QString Worksheet::zoomScale() const
+{
+	Q_D(const Worksheet);
+	return d->sheetView.toString( QStringLiteral( "zoomScale" ) );
+	//return d->windowProtection;
+}
+
+/*!
+* Protects/unprotects the sheet based on \a protect.
+*/
+void Worksheet::setZoomScale(const QString& value)
+{
+	Q_D(Worksheet);
+
+	//	Default is 100, only save if different
+	if( value != QStringLiteral("100" ) )
+		d->sheetView.setString( QStringLiteral( "zoomScale" ), value );
+	else
+		d->sheetView.remove( QStringLiteral( "zoomScale" ) );
 }
 
 /*!
@@ -545,6 +640,26 @@ QVariant Worksheet::read(int row, int column) const
     }
 
     return cell->value();
+}
+
+//	return converted value
+QString Worksheet::value2(int row, int column) const
+{
+	Cell *cell = cellAt(row, column);
+	if (!cell)
+		return QString();
+
+	if (cell->isDateTime()) {
+		double val = cell->value().toDouble();
+		QDateTime dt = cell->dateTime();
+		if (val < 1)
+			return dt.time().toString();
+		if (fmod(val, 1.0) <  1.0 / (1000 * 60 * 60 * 24)) //integer
+			return dt.date().toString(Qt::ISODate);
+		return dt.toString(Qt::ISODate);
+	}
+
+	return cell->value().toString();
 }
 
 /*!
@@ -1146,13 +1261,9 @@ void Worksheet::saveToXmlFile(QIODevice *device) const
 
     writer.writeStartDocument(QStringLiteral("1.0"), true);
     writer.writeStartElement(QStringLiteral("worksheet"));
-    writer.writeAttribute(QStringLiteral("xmlns"), QStringLiteral("http://schemas.openxmlformats.org/spreadsheetml/2006/main"));
-    writer.writeAttribute(QStringLiteral("xmlns:r"), QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/relationships"));
 
-    //for Excel 2010
-    //    writer.writeAttribute("xmlns:mc", "http://schemas.openxmlformats.org/markup-compatibility/2006");
-    //    writer.writeAttribute("xmlns:x14ac", "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac");
-    //    writer.writeAttribute("mc:Ignorable", "x14ac");
+	//	Dave-Move header logic to separate section
+	d->saveXmlHeader(writer);	
 
     writer.writeStartElement(QStringLiteral("dimension"));
     writer.writeAttribute(QStringLiteral("ref"), d->generateDimensionString());
@@ -1160,32 +1271,23 @@ void Worksheet::saveToXmlFile(QIODevice *device) const
 
     writer.writeStartElement(QStringLiteral("sheetViews"));
     writer.writeStartElement(QStringLiteral("sheetView"));
-    if (d->windowProtection)
-        writer.writeAttribute(QStringLiteral("windowProtection"), QStringLiteral("1"));
-    if (d->showFormulas)
-        writer.writeAttribute(QStringLiteral("showFormulas"), QStringLiteral("1"));
-    if (!d->showGridLines)
-        writer.writeAttribute(QStringLiteral("showGridLines"), QStringLiteral("0"));
-    if (!d->showRowColHeaders)
-        writer.writeAttribute(QStringLiteral("showRowColHeaders"), QStringLiteral("0"));
-    if (!d->showZeros)
-        writer.writeAttribute(QStringLiteral("showZeros"), QStringLiteral("0"));
-    if (d->rightToLeft)
-        writer.writeAttribute(QStringLiteral("rightToLeft"), QStringLiteral("1"));
-    if (d->tabSelected)
-        writer.writeAttribute(QStringLiteral("tabSelected"), QStringLiteral("1"));
-    if (!d->showRuler)
-        writer.writeAttribute(QStringLiteral("showRuler"), QStringLiteral("0"));
-    if (!d->showOutlineSymbols)
-        writer.writeAttribute(QStringLiteral("showOutlineSymbols"), QStringLiteral("0"));
-    if (!d->showWhiteSpace)
-        writer.writeAttribute(QStringLiteral("showWhiteSpace"), QStringLiteral("0"));
-    writer.writeAttribute(QStringLiteral("workbookViewId"), QStringLiteral("0"));
+
+	//	Dave-Replace hardcoded with original file
+	QXmlStreamAttributes attrs = d->sheetView.writeXMLAttributes();
+	writer.writeAttributes( attrs );
+
+	//	Dave-Save client elements
+	d->saveSheetViewElements( writer );
+
     writer.writeEndElement();//sheetView
     writer.writeEndElement();//sheetViews
 
     writer.writeStartElement(QStringLiteral("sheetFormatPr"));
-    writer.writeAttribute(QStringLiteral("defaultRowHeight"), QString::number(d->default_row_height));
+
+	attrs = d->sheetFormatPr.writeXMLAttributes();
+	writer.writeAttributes( attrs );
+
+/*    writer.writeAttribute(QStringLiteral("defaultRowHeight"), QString::number(d->default_row_height));
     if (d->default_row_height != 15)
         writer.writeAttribute(QStringLiteral("customHeight"), QStringLiteral("1"));
     if (d->default_row_zeroed)
@@ -1195,7 +1297,7 @@ void Worksheet::saveToXmlFile(QIODevice *device) const
     if (d->outline_col_level)
         writer.writeAttribute(QStringLiteral("outlineLevelCol"), QString::number(d->outline_col_level));
     //for Excel 2010
-    //    writer.writeAttribute("x14ac:dyDescent", "0.25");
+    //    writer.writeAttribute("x14ac:dyDescent", "0.25");*/
     writer.writeEndElement();//sheetFormatPr
 
     if (!d->colsInfo.isEmpty()) {
@@ -1238,6 +1340,96 @@ void Worksheet::saveToXmlFile(QIODevice *device) const
 
     writer.writeEndElement();//worksheet
     writer.writeEndDocument();
+}
+
+void WorksheetPrivate::saveSheetViewElements( QXmlStreamWriter &writer ) const	//	Dave added
+{
+	if( pane.count() > 0 )
+	{
+		//	Save split pane
+		writer.writeStartElement( QStringLiteral( "pane" ) );
+
+		//	Dave-Replace hardcoded with original file
+		QXmlStreamAttributes attrs = pane.writeXMLAttributes();
+		writer.writeAttributes( attrs );
+
+		//	Save attributes
+/*		writer.writeAttribute(QStringLiteral("xSplit"), xSplit);
+		writer.writeAttribute(QStringLiteral("ySplit"), ySplit);
+		writer.writeAttribute(QStringLiteral("topLeftCell"), topLeftCell);
+		writer.writeAttribute(QStringLiteral("activePane"), activePane);
+		writer.writeAttribute(QStringLiteral("state"), state);
+*/
+		writer.writeEndElement();//pane
+	}
+
+	//	Use const to avoid copies
+	for( const XlsxAttributes& item : selections )
+	{
+		//	Save split pane
+		writer.writeStartElement( QStringLiteral( "selection" ) );
+
+		//	Dave-Replace hardcoded with original file
+		QXmlStreamAttributes attrs = item.writeXMLAttributes();
+		writer.writeAttributes( attrs );
+		//	Save attributes
+/*		writer.writeAttribute(QStringLiteral("pane"), item._pane);
+		writer.writeAttribute(QStringLiteral("activeCell"), item._activeCell);
+		writer.writeAttribute(QStringLiteral("sqref"), item._sqref);*/
+
+		writer.writeEndElement();//selection
+	}
+}
+
+void WorksheetPrivate::saveXmlHeader(QXmlStreamWriter &writer) const	//	Dave added
+{
+	if (namespaceDeclarations.empty())
+	{
+		//	Sheet was created from scratch, put in basic headers
+		writer.writeAttribute(QLatin1String("xmlns"), QLatin1String("http://schemas.openxmlformats.org/spreadsheetml/2006/main"));
+		writer.writeAttribute(QLatin1String("xmlns:r"), QLatin1String("http://schemas.openxmlformats.org/officeDocument/2006/relationships"));
+
+		//for Excel 2010 - this could be changed to workbook flag.  Assume At least Excel 2010 since 2007 is no longer supported.
+		writer.writeAttribute(QLatin1String("xmlns:mc"), QLatin1String("http://schemas.openxmlformats.org/markup-compatibility/2006"));
+		writer.writeAttribute(QLatin1String("mc:Ignorable"), QLatin1String("x14ac"));
+		writer.writeAttribute(QLatin1String("xmlns:x14ac"), QLatin1String("http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"));
+	}
+	else
+	{
+		//	If no namespace found, use xmlns
+		QString tempNamespace = headerMamespace.isEmpty() ? QLatin1String("xmlns") : headerMamespace;
+
+		//	Output from opened sheet
+		QXmlStreamNamespaceDeclaration declare;
+		foreach(declare, namespaceDeclarations)
+		{
+			//	create name with prefex
+			QString prefix = tempNamespace;
+
+			//	Skip blank, this is main namespace	
+			if( !declare.prefix().isEmpty())
+				prefix += QLatin1String(":") + declare.prefix().toString();
+			
+			//	Order in XL is strange, push attribute in between attributes 
+			writer.writeAttribute(prefix, declare.namespaceUri().toString());
+
+			if (prefix == QLatin1String("xmlns:mc") && headerAttributes.hasAttribute(QLatin1String("mc:Ignorable")))
+			{
+				//	Put ignore attribute here.  Then complete name spaces
+				writer.writeAttribute(QLatin1String("mc:Ignorable"), headerAttributes.value(QLatin1String("mc:Ignorable")).toString());
+			}
+		}
+
+		//	Output remaining attributes
+		foreach(QXmlStreamAttribute attrib, headerAttributes)
+		{
+			QString name = attrib.qualifiedName().toString();
+
+			//	Ignorable output above already
+			if( name != QLatin1String("mc:Ignorable"))
+				writer.writeAttribute(name, attrib.value().toString());
+		}
+	}
 }
 
 void WorksheetPrivate::saveXmlSheetData(QXmlStreamWriter &writer) const
@@ -1624,7 +1816,11 @@ double Worksheet::columnWidth(int column)
     if (columnInfoList.count() == 1)
        return columnInfoList.at(0)->width ;
 
-    return d->sheetFormatProps.defaultColWidth;
+	const qint32 defaultRowHeight = d->sheetFormatPr.toInt( QStringLiteral( "defaultRowHeight" ) );
+	
+	//	If value isn't saved, return default
+	return defaultRowHeight ? defaultRowHeight : d->defaultRowHeight;
+	//return d->sheetFormatProps.defaultColWidth;
 }
 
 /*!
@@ -1721,7 +1917,8 @@ double Worksheet::rowHeight(int row)
     int min_col = d->dimension.isValid() ? d->dimension.firstColumn() : 1;
 
     if (d->checkDimensions(row, min_col, false, true) || !d->rowsInfo.contains(row))
-        return d->sheetFormatProps.defaultRowHeight; //return default on invalid row
+		return d->defaultRowHeight; //return default on invalid row
+		//return d->sheetFormatProps.defaultRowHeight; //return default on invalid row
 
 
     return d->rowsInfo[row]->height;
@@ -1871,7 +2068,7 @@ int WorksheetPrivate::rowPixelsSize(int row) const
     if (row_sizes.contains(row))
         height = row_sizes[row];
     else
-        height = default_row_height;
+        height = defaultRowHeight;
     return static_cast<int>(4.0 / 3.0 *height);
 }
 
@@ -2118,7 +2315,9 @@ void WorksheetPrivate::loadXmlSheetViews(QXmlStreamReader &reader)
             && reader.tokenType() == QXmlStreamReader::EndElement)) {
         reader.readNextStartElement();
         if (reader.tokenType() == QXmlStreamReader::StartElement && reader.name() == QLatin1String("sheetView")) {
-            QXmlStreamAttributes attrs = reader.attributes();
+			//	Cache all attributes for later save
+			sheetView.readXMLAttributes( reader.attributes() );
+		/*	QXmlStreamAttributes attrs = reader.attributes();
             //default false
             windowProtection = attrs.value(QLatin1String("windowProtection")) == QLatin1String("1");
             showFormulas = attrs.value(QLatin1String("showFormulas")) == QLatin1String("1");
@@ -2131,14 +2330,55 @@ void WorksheetPrivate::loadXmlSheetViews(QXmlStreamReader &reader)
             showRuler = attrs.value(QLatin1String("showRuler")) != QLatin1String("0");
             showOutlineSymbols = attrs.value(QLatin1String("showOutlineSymbols")) != QLatin1String("0");
             showWhiteSpace = attrs.value(QLatin1String("showWhiteSpace")) != QLatin1String("0");
+
+			//	Dave-Missing fields
+			if (attrs.hasAttribute(QLatin1String("zoomScaleNormal")))
+				zoomScaleNormal = attrs.value(QLatin1String("zoomScaleNormal")).toString();
+*/
+			//	Dave-sheetview can have elements. Get them now
+			while( !reader.atEnd() && !( reader.name() == QLatin1String( "sheetView" )
+								 && reader.tokenType() == QXmlStreamReader::EndElement ) )
+			{
+				if( reader.readNextStartElement() )
+				{
+					if( reader.name() == QLatin1String( "pane" ) )
+					{
+						//	Get pane properties
+						pane.readXMLAttributes( reader.attributes() );
+/*						QXmlStreamAttributes attrs = reader.attributes();
+						xSplit		= attrs.value( QLatin1String( "xSplit" ) ).toString();
+						ySplit		= attrs.value( QLatin1String( "ySplit" ) ).toString();
+						topLeftCell	= attrs.value( QLatin1String( "topLeftCell" ) ).toString();
+						activePane	= attrs.value( QLatin1String( "activePane" ) ).toString();
+						state		= attrs.value( QLatin1String( "state" ) ).toString();*/
+					}
+
+					if( reader.name() == QLatin1String( "selection" ) )
+					{
+						//	Get pane properties
+						XlsxAttributes attrs;
+						attrs.readXMLAttributes( reader.attributes());
+
+						//QXmlStreamAttributes attrs = reader.attributes();
+						//QString pane		= attrs.value( QLatin1String( "pane" ) ).toString();
+						//QString activeCell	= attrs.value( QLatin1String( "activeCell" ) ).toString();
+						//QString sqref		= attrs.value( QLatin1String( "sqref" ) ).toString();
+
+						//	There can be more than one per sheet
+						selections.append( attrs );
+					}
+				}
+			}
         }
     }
 }
 
 void WorksheetPrivate::loadXmlSheetFormatProps(QXmlStreamReader &reader)
 {
-    Q_ASSERT(reader.name() == QLatin1String("sheetFormatPr"));
-    QXmlStreamAttributes attributes = reader.attributes();
+	Q_ASSERT( reader.name() == QLatin1String( "sheetFormatPr" ) );
+	sheetFormatPr.readXMLAttributes( reader.attributes() );
+/*    
+	QXmlStreamAttributes attributes = reader.attributes();
     XlsxSheetFormatProps formatProps;
 
     //Retain default values
@@ -2167,7 +2407,7 @@ void WorksheetPrivate::loadXmlSheetFormatProps(QXmlStreamReader &reader)
     if(formatProps.defaultColWidth == 0.0) { //not set
        formatProps.defaultColWidth = WorksheetPrivate::calculateColWidth(formatProps.baseColWidth);
     }
-
+*/
 }
 double WorksheetPrivate::calculateColWidth(int characters)
 {
@@ -2252,6 +2492,22 @@ QList <QSharedPointer<XlsxRowInfo> > WorksheetPrivate::getRowInfoList(int rowFir
     return rowInfoList;
 }
 
+void WorksheetPrivate::loadXmlHeader(QXmlStreamReader &reader)
+{
+	//	Header consists of 3 parts, name space, declaration and attributes
+
+	//	Save name space
+	headerMamespace = QLatin1String("xmlns"); // Struggling to find correct QT function
+
+	//	Save declaration
+	namespaceDeclarations = reader.namespaceDeclarations();
+
+	//	Save header attributes
+	headerAttributes = reader.attributes();
+
+}
+
+
 bool Worksheet::loadFromXmlFile(QIODevice *device)
 {
     Q_D(Worksheet);
@@ -2264,7 +2520,11 @@ bool Worksheet::loadFromXmlFile(QIODevice *device)
                 QXmlStreamAttributes attributes = reader.attributes();
                 QString range = attributes.value(QLatin1String("ref")).toString();
                 d->dimension = CellRange(range);
-            } else if (reader.name() == QLatin1String("sheetViews")) {
+			}
+			else if (reader.name() == QLatin1String("worksheet")) {
+				//	Store namespace declarations from file
+				d->loadXmlHeader(reader);
+			} else if (reader.name() == QLatin1String("sheetViews")) {
                 d->loadXmlSheetViews(reader);
             } else if (reader.name() == QLatin1String("sheetFormatPr")) {
                 d->loadXmlSheetFormatProps(reader);
@@ -2340,5 +2600,34 @@ SharedStrings *WorksheetPrivate::sharedStrings() const
 {
     return workbook->sharedStrings();
 }
+
+//	Dave added functions
+CellRange Worksheet::range(const QString& range) 
+{
+	QString temp = range;
+
+	//	Dave-Add logic to pull out sheet name
+	if (range.contains(QLatin1Char('!')))
+	{
+		//	We need to split out sheet data
+		QStringList rs = range.split(QLatin1Char('!'));
+		
+		//	Check for consistency
+		Q_ASSERT(rs.size() < 3);
+		Q_ASSERT(rs[0] == sheetName());
+		//	Parse remainder
+		temp = rs[1];
+	}
+
+	return CellRange(temp, this);
+}
+
+CellRange Worksheet::range(int firstRow, int firstColumn, int lastRow, int lastColumn) 
+{
+	//	Use copy on write (COW)
+	return CellRange(firstRow, firstColumn, lastRow, lastColumn, this);
+}
+
+
 
 QT_END_NAMESPACE_XLSX

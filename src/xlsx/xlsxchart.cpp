@@ -26,6 +26,7 @@
 #include "xlsxchart_p.h"
 #include "xlsxworksheet.h"
 #include "xlsxcellrange.h"
+#include "xlsxcellrange_p.h"
 #include "xlsxutility_p.h"
 
 #include <QIODevice>

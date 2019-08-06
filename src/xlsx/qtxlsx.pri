@@ -33,6 +33,7 @@ HEADERS += $$PWD/xlsxdocpropscore_p.h \
     $$PWD/xlsxdatavalidation.h \
     $$PWD/xlsxdatavalidation_p.h \
     $$PWD/xlsxcellreference.h \
+    $$PWD/xlsxcellrange_p.h \
     $$PWD/xlsxcellrange.h \
     $$PWD/xlsxrichstring_p.h \
     $$PWD/xlsxrichstring.h \
@@ -48,7 +49,9 @@ HEADERS += $$PWD/xlsxdocpropscore_p.h \
     $$PWD/xlsxchart_p.h \
     $$PWD/xlsxsimpleooxmlfile_p.h \
     $$PWD/xlsxcellformula.h \
-    $$PWD/xlsxcellformula_p.h
+    $$PWD/xlsxcellformula_p.h \
+    $$PWD/xlsxdefinednames.h \
+    $$PWD/xlsxdefinednames_p.h
 
 SOURCES += $$PWD/xlsxdocpropscore.cpp \
     $$PWD/xlsxdocpropsapp.cpp \
@@ -80,5 +83,6 @@ SOURCES += $$PWD/xlsxdocpropscore.cpp \
     $$PWD/xlsxabstractooxmlfile.cpp \
     $$PWD/xlsxchart.cpp \
     $$PWD/xlsxsimpleooxmlfile.cpp \
-    $$PWD/xlsxcellformula.cpp
+    $$PWD/xlsxcellformula.cpp \
+	$$PWD/xlsxdefinednames.cpp
 

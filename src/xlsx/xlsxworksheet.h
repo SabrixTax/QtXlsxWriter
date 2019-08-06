@@ -61,7 +61,10 @@ public:
     bool write(int row, int column, const QVariant &value, const Format &format=Format());
     QVariant read(const CellReference &row_column) const;
     QVariant read(int row, int column) const;
-    bool writeString(const CellReference &row_column, const QString &value, const Format &format=Format());
+	
+	QString value2(int row, int column) const;
+	
+	bool writeString(const CellReference &row_column, const QString &value, const Format &format=Format());
     bool writeString(int row, int column, const QString &value, const Format &format=Format());
     bool writeString(const CellReference &row_column, const RichString &value, const Format &format=Format());
     bool writeString(int row, int column, const RichString &value, const Format &format=Format());
@@ -142,7 +145,15 @@ public:
 
     ~Worksheet();
 
+	//	Dave Added
+	//	New Range functions
+	CellRange range(const QString& cells);
+	CellRange range(int firstRow, int firstColumn, int lastRow, int lastColumn);
 
+	//	New Accessors
+	const QString zoomScale() const;
+	void setZoomScale( const QString& value );
+	//	Dave End
 private:
     friend class DocumentPrivate;
     friend class Workbook;

@@ -37,6 +37,14 @@ namespace QXlsx {
 DocPropsApp::DocPropsApp(CreateFlag flag)
     :AbstractOOXmlFile(flag)
 {
+	//	Used for documents created in this library
+	m_application		= "Microsoft Excel";
+	m_docSecurity		= "0";
+	m_scaleCrop			= "false";
+	m_linksUpToDate		= "false";
+	m_sharedDoc			= "false";
+	m_hyperlinksChanged	= "false";
+	m_appVersion		= "12.0000";
 }
 
 void DocPropsApp::addPartTitle(const QString &title)
@@ -80,6 +88,76 @@ QStringList DocPropsApp::propertyNames() const
     return m_properties.keys();
 }
 
+//	New accessors
+QString DocPropsApp::application() const
+{
+	return m_application;
+}
+
+void DocPropsApp::setApplication(const QString &value)
+{
+	m_application = value;
+}
+
+QString DocPropsApp::docSecurity() const
+{
+	return m_docSecurity;
+}
+
+void DocPropsApp::setDocSecurity(const QString &value)
+{
+	m_docSecurity = value;
+}
+
+QString DocPropsApp::scaleCrop() const
+{
+	return m_scaleCrop;
+}
+
+void DocPropsApp::setScaleCrop(const QString &value)
+{
+	m_scaleCrop = value;
+}
+
+QString DocPropsApp::linksUpToDate() const
+{
+	return m_linksUpToDate;
+}
+
+void DocPropsApp::setLinksUpToDate(const QString &value)
+{
+	m_linksUpToDate = value;
+}
+
+QString DocPropsApp::sharedDoc() const
+{
+	return m_sharedDoc;
+}
+
+void DocPropsApp::setSharedDoc(const QString &value)
+{
+	m_sharedDoc = value;
+}
+QString DocPropsApp::hyperlinksChanged() const
+{
+	return m_hyperlinksChanged;
+}
+
+void DocPropsApp::setHyperlinksChanged(const QString &value)
+{
+	m_hyperlinksChanged = value;
+}
+QString DocPropsApp::appVersion() const
+{
+	return m_appVersion;
+}
+
+void DocPropsApp::setAppVersion(const QString &value)
+{
+	m_appVersion = value;
+}
+
+
 void DocPropsApp::saveToXmlFile(QIODevice *device) const
 {
     QXmlStreamWriter writer(device);
@@ -89,9 +167,9 @@ void DocPropsApp::saveToXmlFile(QIODevice *device) const
     writer.writeStartElement(QStringLiteral("Properties"));
     writer.writeDefaultNamespace(QStringLiteral("http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"));
     writer.writeNamespace(vt, QStringLiteral("vt"));
-    writer.writeTextElement(QStringLiteral("Application"), QStringLiteral("Microsoft Excel"));
-    writer.writeTextElement(QStringLiteral("DocSecurity"), QStringLiteral("0"));
-    writer.writeTextElement(QStringLiteral("ScaleCrop"), QStringLiteral("false"));
+	writer.writeTextElement(QStringLiteral("Application"), m_application);// QStringLiteral("Microsoft Excel"));
+	writer.writeTextElement(QStringLiteral("DocSecurity"), m_docSecurity); // QStringLiteral("0"));
+	writer.writeTextElement(QStringLiteral("ScaleCrop"), m_scaleCrop); // QStringLiteral("false"));
 
     writer.writeStartElement(QStringLiteral("HeadingPairs"));
     writer.writeStartElement(vt, QStringLiteral("vector"));
@@ -122,10 +200,10 @@ void DocPropsApp::saveToXmlFile(QIODevice *device) const
         writer.writeTextElement(QStringLiteral("Manager"), m_properties[QStringLiteral("manager")]);
     //Not like "manager", "company" always exists for Excel generated file.
     writer.writeTextElement(QStringLiteral("Company"), m_properties.contains(QStringLiteral("company")) ? m_properties[QStringLiteral("company")]: QString());
-    writer.writeTextElement(QStringLiteral("LinksUpToDate"), QStringLiteral("false"));
-    writer.writeTextElement(QStringLiteral("SharedDoc"), QStringLiteral("false"));
-    writer.writeTextElement(QStringLiteral("HyperlinksChanged"), QStringLiteral("false"));
-    writer.writeTextElement(QStringLiteral("AppVersion"), QStringLiteral("12.0000"));
+	writer.writeTextElement(QStringLiteral("LinksUpToDate"), m_linksUpToDate); // QStringLiteral("false"));
+	writer.writeTextElement(QStringLiteral("SharedDoc"), m_sharedDoc); // QStringLiteral("false"));
+	writer.writeTextElement(QStringLiteral("HyperlinksChanged"), m_hyperlinksChanged); // QStringLiteral("false"));
+	writer.writeTextElement(QStringLiteral("AppVersion"), m_appVersion); // QStringLiteral("12.0000"));
 
     writer.writeEndElement(); //Properties
     writer.writeEndDocument();
@@ -145,7 +223,29 @@ bool DocPropsApp::loadFromXmlFile(QIODevice *device)
              } else if (reader.name() == QStringLiteral("Company")) {
                  setProperty(QStringLiteral("company"), reader.readElementText());
              }
-         }
+			 //	Dave-New fields
+			 else if(reader.name() == QStringLiteral("Application")) {
+				 m_application = reader.readElementText();
+			 }
+			 else if (reader.name() == QStringLiteral("DocSecurity")) {
+				 m_docSecurity = reader.readElementText();
+			 }
+			 else if (reader.name() == QStringLiteral("ScaleCrop")) {
+				 m_scaleCrop = reader.readElementText();
+			 }
+			 else if (reader.name() == QStringLiteral("LinksUpToDate")) {
+				 m_linksUpToDate = reader.readElementText();
+			 }
+			 else if (reader.name() == QStringLiteral("SharedDoc")) {
+				 m_sharedDoc = reader.readElementText();
+			 }
+			 else if (reader.name() == QStringLiteral("HyperlinksChanged")) {
+				 m_hyperlinksChanged = reader.readElementText();
+			 }
+			 else if (reader.name() == QStringLiteral("AppVersion")) {
+				 m_appVersion = reader.readElementText();
+			 }
+		 }
 
          if (reader.hasError()) {
              qDebug("Error when read doc props app file.");

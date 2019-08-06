@@ -42,10 +42,14 @@
 #include "xlsxdatavalidation.h"
 #include "xlsxconditionalformatting.h"
 #include "xlsxcellformula.h"
-
 #include <QImage>
 #include <QSharedPointer>
 #include <QRegularExpression>
+
+//	Dave added
+#include <QXmlStreamNamespaceDeclaration>  // Store worksheet declarations instead of hardcoding
+#include "XlsxAttributes_p.h"
+//	Dave end
 
 class QXmlStreamWriter;
 class QXmlStreamReader;
@@ -80,7 +84,8 @@ struct XlsxHyperlinkData
     QString tooltip;
 };
 
-// ECMA-376 Part1 18.3.1.81
+// Dave-ECMA-376 Part1 18.3.1.81
+/*
 struct XlsxSheetFormatProps
 {
     XlsxSheetFormatProps(int baseColWidth = 8,
@@ -113,6 +118,7 @@ struct XlsxSheetFormatProps
     bool thickTop;
     bool zeroHeight;
 };
+*/
 
 struct XlsxRowInfo
 {
@@ -149,6 +155,20 @@ struct XlsxColumnInfo
     bool collapsed;
 };
 
+/*
+//	Dave-For freeze panels
+struct XlsxSelectionInfo
+{
+	XlsxSelectionInfo();
+	XlsxSelectionInfo(const QString& pane, const QString& activeCell, const QString& sqref) :
+	_pane(pane), _activeCell(activeCell), _sqref(sqref)
+	{}
+	QString _pane;
+	QString _activeCell;
+	QString _sqref;
+};
+*/
+
 class XLSX_AUTOTEST_EXPORT WorksheetPrivate : public AbstractSheetPrivate
 {
     Q_DECLARE_PUBLIC(Worksheet)
@@ -168,7 +188,15 @@ public:
     void saveXmlHyperlinks(QXmlStreamWriter &writer) const;
     void saveXmlDrawings(QXmlStreamWriter &writer) const;
     void saveXmlDataValidations(QXmlStreamWriter &writer) const;
-    int rowPixelsSize(int row) const;
+	
+	//	Dave added
+	void initalizeBlank();
+	void saveXmlHeader(QXmlStreamWriter &writer) const;	
+	void saveSheetViewElements( QXmlStreamWriter &writer ) const;
+	void loadXmlHeader(QXmlStreamReader &reader);	
+	//	Dave end
+
+	int rowPixelsSize(int row) const;
     int colPixelsSize(int col) const;
 
     void loadXmlSheetData(QXmlStreamReader &reader);
@@ -208,11 +236,11 @@ public:
     int outline_row_level;
     int outline_col_level;
 
-    int default_row_height;
+    //const qint32 default_row_height;
     bool default_row_zeroed;
 
-    XlsxSheetFormatProps sheetFormatProps;
-
+    //XlsxSheetFormatProps sheetFormatProps;
+/*
     bool windowProtection;
     bool showFormulas;
     bool showGridLines;
@@ -223,8 +251,39 @@ public:
     bool showRuler;
     bool showOutlineSymbols;
     bool showWhiteSpace;
-
+*/
     QRegularExpression urlPattern;
+
+	//	Dave-Missing fields
+	//QString zoomScaleNormal;
+	QXmlStreamNamespaceDeclarations namespaceDeclarations;
+	QXmlStreamAttributes headerAttributes;
+	QString				headerMamespace;
+
+
+	//	Dave - bookviews data
+	//	Ecma Office Open XML Part 1 - Fundamentals And Markup Language Reference1
+	//	Page 1697 (chart) 1698-1702 (Sheet)
+	XlsxAttributes				sheetView;
+
+	//	Dave - selection data
+	//	Ecma Office Open XML Part 1 - Fundamentals And Markup Language Reference1
+	//	Page 1684
+	//QList<XlsxSelectionInfo>	selections;
+	QList<XlsxAttributes>		selections;
+
+	//	Dave - bookviews data
+	//	Ecma Office Open XML Part 1 - Fundamentals And Markup Language Reference1
+	//	Page 1665
+	XlsxAttributes				pane;
+
+	//	Dave - sheetFormatPr data
+	//	Ecma Office Open XML Part 1 - Fundamentals And Markup Language Reference1
+	//	Page 1685-1686
+	XlsxAttributes				sheetFormatPr;
+
+	const qint32 defaultRowHeight = 15;
+
 private:
     static double calculateColWidth(int characters);
 };
