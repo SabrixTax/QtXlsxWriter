@@ -46,7 +46,7 @@ class QXmlStreamAttributes;
 
 QT_BEGIN_NAMESPACE_XLSX
 
-class XlsxAttributes //: public QObject
+class Q_XLSX_EXPORT XlsxAttributes //: public QObject
 {
 	//Q_OBJECT
 
