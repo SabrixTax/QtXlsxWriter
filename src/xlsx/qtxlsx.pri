@@ -52,8 +52,9 @@ HEADERS += \
     $$PWD/xlsxworkbook_p.h \
     $$PWD/xlsxworksheet.h \
     $$PWD/xlsxworksheet_p.h \
-    $$PWD/xlsxzipreader_p.h \
-    $$PWD/xlsxzipwriter_p.h
+    $$PWD/xlsxziparchive.h \
+    $$PWD/xlsxziparchive_p.h \
+    $$PWD/zip_file.h
 
 SOURCES += \
     $$PWD/XlsxAttributes.cpp \
@@ -87,5 +88,4 @@ SOURCES += \
     $$PWD/xlsxutility.cpp \
     $$PWD/xlsxworkbook.cpp \
     $$PWD/xlsxworksheet.cpp \
-    $$PWD/xlsxzipreader.cpp \
-    $$PWD/xlsxzipwriter.cpp
+    $$PWD/xlsxziparchive.cpp

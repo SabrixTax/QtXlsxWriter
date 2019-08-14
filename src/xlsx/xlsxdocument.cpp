@@ -39,8 +39,8 @@
 #include "xlsxdrawing_p.h"
 #include "xlsxmediafile_p.h"
 #include "xlsxchart.h"
-#include "xlsxzipreader_p.h"
-#include "xlsxzipwriter_p.h"
+
+#include "xlsxziparchive.h"
 
 #include <QFile>
 #include <QPointF>
@@ -106,7 +106,8 @@ void DocumentPrivate::init()
 bool DocumentPrivate::loadPackage(QIODevice *device)
 {
     Q_Q(Document);
-    ZipReader zipReader(device);
+    //ZipReader zipReader(device);
+	XlsxZipArchive zipReader( device );
     QStringList filePaths = zipReader.filePaths();
 
     //Load the Content_Types file
@@ -244,8 +245,9 @@ bool DocumentPrivate::loadPackage(QIODevice *device)
 bool DocumentPrivate::savePackage(QIODevice *device) const
 {
     Q_Q(const Document);
-    ZipWriter zipWriter(device);
-    if (zipWriter.error())
+    //ZipWriter zipWriter(device);
+	XlsxZipArchive zipWriter( device );
+	if (zipWriter.error())
         return false;
 
     contentTypes->clearOverrides();
